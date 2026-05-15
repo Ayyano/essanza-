@@ -1,9 +1,36 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY!;
+let supabaseInstance: SupabaseClient | null = null;
+let supabaseAdminInstance: SupabaseClient | null = null;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) throw new Error(`${name} environment variable is not set`);
+  return val;
+}
 
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(requireEnv('NEXT_PUBLIC_SUPABASE_URL'), requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'));
+  }
+  return supabaseInstance;
+}
+
+function getSupabaseAdminClient(): SupabaseClient {
+  if (!supabaseAdminInstance) {
+    supabaseAdminInstance = createClient(requireEnv('NEXT_PUBLIC_SUPABASE_URL'), requireEnv('NEXT_PUBLIC_SUPABASE_SERVICE_KEY'));
+  }
+  return supabaseAdminInstance;
+}
+
+export const supabase = new Proxy<SupabaseClient>({} as unknown as SupabaseClient, {
+  get(_, prop) {
+    return (getSupabaseClient() as any)[prop];
+  },
+});
+
+export const supabaseAdmin = new Proxy<SupabaseClient>({} as unknown as SupabaseClient, {
+  get(_, prop) {
+    return (getSupabaseAdminClient() as any)[prop];
+  },
+});
