@@ -1,0 +1,13 @@
+{
+  "name": "ESSANZA Pakistan — Premium Lifestyle Brand",
+  "short_name": "ESSANZA",
+  "description": "Har style ka apna ESSANZA. Premium fashion, beauty & lifestyle store in Pakistan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF8F4",
+  "theme_color": "#1A1A1A",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}
