@@ -10,29 +10,7 @@ import type { Product } from '@/types';
 
 const ITEMS_PER_PAGE = 12;
 
-function mapProduct(row: Record<string, unknown>): Product {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    slug: row.slug as string,
-    category: row.category as string || '',
-    subcategory: row.subcategory as string || '',
-    description: row.description as string || '',
-    price: Number(row.price),
-    salePrice: row.sale_price ? Number(row.sale_price) : undefined,
-    images: (row.images as string[]) || [],
-    colors: row.colors ? (row.colors as { name: string; hex: string }[]) : undefined,
-    sizes: (row.sizes as string[]) || undefined,
-    tags: (row.tags as string[]) || [],
-    rating: Number(row.rating) || 0,
-    reviewCount: Number(row.review_count) || 0,
-    inStock: row.in_stock as boolean ?? true,
-    isNew: row.is_new as boolean ?? false,
-    isTrending: row.is_trending as boolean ?? false,
-    onSale: row.on_sale as boolean ?? false,
-    createdAt: row.created_at as string || '',
-  };
-}
+
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,11 +24,28 @@ export default function AdminProductsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [catMap, setCatMap] = useState<Record<string, string>>({});
+  const [catIdToName, setCatIdToName] = useState<Record<string, string>>({});
+  const [catNameToId, setCatNameToId] = useState<Record<string, string>>({});
 
   const showToast = useCallback((type: 'success' | 'error', message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  useEffect(() => {
+    supabaseAdmin.from('categories').select('id, name').then(({ data }) => {
+      if (data) {
+        setCategories(data);
+        const idToName: Record<string, string> = {};
+        const nameToId: Record<string, string> = {};
+        data.forEach((c: { id: string; name: string }) => {
+          idToName[c.id] = c.name;
+          nameToId[c.name] = c.id;
+        });
+        setCatIdToName(idToName);
+        setCatNameToId(nameToId);
+      }
+    });
   }, []);
 
   const fetchProducts = useCallback(async () => {
@@ -59,7 +54,7 @@ export default function AdminProductsPage() {
       let query = supabaseAdmin.from('products').select('*', { count: 'exact' });
 
       if (search) query = query.ilike('name', `%${search}%`);
-      if (categoryFilter) query = query.eq('category', categoryFilter);
+      if (categoryFilter) query = query.eq('category_id', catNameToId[categoryFilter]);
       if (statusFilter !== 'all') query = query.eq('in_stock', statusFilter === 'active');
 
       const from = (page - 1) * ITEMS_PER_PAGE;
@@ -69,7 +64,31 @@ export default function AdminProductsPage() {
       const { data, count, error } = await query;
       if (error) throw error;
 
-      const mapped = (data || []).map((row: Record<string, unknown>) => mapProduct(row));
+      const mapped = (data || []).map((row: Record<string, unknown>) => {
+        const catId = (row.category_id as string) || '';
+        return {
+          id: row.id as string,
+          name: row.name as string,
+          slug: row.slug as string,
+          category_id: catId,
+          category: catIdToName[catId] || '',
+          subcategory: row.subcategory as string || '',
+          description: row.description as string || '',
+          price: Number(row.price),
+          salePrice: row.sale_price ? Number(row.sale_price) : undefined,
+          images: (row.images as string[]) || [],
+          colors: row.colors ? (row.colors as { name: string; hex: string }[]) : undefined,
+          sizes: (row.sizes as string[]) || undefined,
+          tags: (row.tags as string[]) || [],
+          rating: Number(row.rating) || 0,
+          reviewCount: Number(row.review_count) || 0,
+          inStock: row.in_stock as boolean ?? true,
+          isNew: row.is_new as boolean ?? false,
+          isTrending: row.is_trending as boolean ?? false,
+          onSale: row.on_sale as boolean ?? false,
+          createdAt: row.created_at as string || '',
+        } as Product;
+      });
 
       setProducts(mapped);
       setTotal(count ?? 0);
@@ -79,22 +98,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter, statusFilter, page, showToast]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  useEffect(() => {
-    supabaseAdmin.from('categories').select('id, name').then(({ data }) => {
-      if (data) {
-        setCategories(data);
-        const map: Record<string, string> = {};
-        data.forEach((c: { id: string; name: string }) => { map[c.name] = c.id; });
-        setCatMap(map);
-      }
-    });
-  }, []);
+  }, [search, categoryFilter, statusFilter, page, showToast, catIdToName, catNameToId]);
 
   useEffect(() => {
     setPage(1);

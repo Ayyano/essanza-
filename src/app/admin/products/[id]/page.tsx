@@ -19,6 +19,17 @@ export default function EditProductPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [catLookup, setCatLookup] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabaseAdmin.from('categories').select('id, name').then(({ data }) => {
+      if (data) {
+        const m: Record<string, string> = {};
+        data.forEach((c: { id: string; name: string }) => { m[c.id] = c.name; });
+        setCatLookup(m);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     supabaseAdmin.from('products').select('*').eq('id', id).single().then(({ data, error }) => {
@@ -26,11 +37,13 @@ export default function EditProductPage() {
         setProduct(null);
       } else {
         const row = data as Record<string, unknown>;
+        const catId = (row.category_id as string) || '';
         setProduct({
           id: row.id as string,
           name: row.name as string,
           slug: row.slug as string,
-          category: (row.category as string) || '',
+          category_id: catId,
+          category: catLookup[catId] || '',
           description: (row.description as string) || '',
           price: Number(row.price),
           salePrice: row.sale_price ? Number(row.sale_price) : undefined,
@@ -49,7 +62,7 @@ export default function EditProductPage() {
       }
       setLoading(false);
     });
-  }, [id]);
+  }, [id, catLookup]);
 
   const handleSubmit = async (data: Record<string, unknown>) => {
     setSaving(true);

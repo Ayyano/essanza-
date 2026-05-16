@@ -1,4 +1,4 @@
--- ESSANZA Database Schema
+-- ESAAS Database Schema
 -- Run this entire file as a single SQL migration
 
 -- Enable UUID extension
@@ -234,8 +234,8 @@ CREATE POLICY "Public read access" ON blog_posts FOR SELECT USING (is_published 
 -- Admin full access via service_role (app-level)
 -- Insert default settings
 INSERT INTO site_settings (key, value) VALUES
-  ('site_name', '"ESSANZA Pakistan"'),
+  ('site_name', '"ESAAS Pakistan"'),
   ('whatsapp_number', '"923069228330"'),
-  ('contact_email', '"essenza0055@gmail.com"'),
+  ('contact_email', '"esaas.lifestyle@gmail.com"'),
   ('free_shipping_threshold', '3000'),
   ('delivery_fee', '150');

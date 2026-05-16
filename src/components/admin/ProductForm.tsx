@@ -13,7 +13,7 @@ const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 interface ProductFormData {
   name: string;
   slug: string;
-  category: string;
+  category_id: string;
   description: string;
   price: string;
   salePrice: string;
@@ -39,7 +39,7 @@ function defaultFormData(initialData?: Product): ProductFormData {
     return {
       name: initialData.name,
       slug: initialData.slug,
-      category: initialData.category,
+      category_id: initialData.category_id || '',
       description: initialData.description,
       price: String(initialData.price),
       salePrice: initialData.salePrice ? String(initialData.salePrice) : '',
@@ -57,7 +57,7 @@ function defaultFormData(initialData?: Product): ProductFormData {
   return {
     name: '',
     slug: '',
-    category: '',
+    category_id: '',
     description: '',
     price: '',
     salePrice: '',
@@ -75,12 +75,12 @@ function defaultFormData(initialData?: Product): ProductFormData {
 
 export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormProps) {
   const [form, setForm] = useState<ProductFormData>(() => defaultFormData(initialData));
-  const [categories, setCategories] = useState<{ name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
   useEffect(() => {
-    supabaseAdmin.from('categories').select('name').then(({ data }) => {
+    supabaseAdmin.from('categories').select('id, name').then(({ data }) => {
       if (data) setCategories(data);
     });
   }, []);
@@ -133,7 +133,7 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = 'Name is required';
     if (!form.slug.trim()) errs.slug = 'Slug is required';
-    if (!form.category) errs.category = 'Category is required';
+    if (!form.category_id) errs.category_id = 'Category is required';
     if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) errs.price = 'Valid price is required';
     if (form.salePrice && (isNaN(Number(form.salePrice)) || Number(form.salePrice) < 0)) errs.salePrice = 'Invalid sale price';
     if (form.images.filter(Boolean).length === 0) errs.images = 'At least one image URL is required';
@@ -148,7 +148,7 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
     onSubmit({
       name: form.name.trim(),
       slug: form.slug.trim() || slugify(form.name),
-      category: form.category.trim(),
+      category_id: form.category_id,
       description: form.description.trim(),
       price: Number(form.price),
       sale_price: form.salePrice ? Number(form.salePrice) : null,
@@ -190,11 +190,11 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
         <div className="grid sm:grid-cols-2 gap-5">
           <div className="space-y-2">
             <label className="text-sm font-medium text-deep-charcoal">Category</label>
-            <select value={form.category} onChange={e => update('category', e.target.value)} className={cn(inputClass('category'), 'appearance-none')}>
+            <select value={form.category_id} onChange={e => update('category_id', e.target.value)} className={cn(inputClass('category_id'), 'appearance-none')}>
               <option value="">Select category</option>
-              {categories.map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
+              {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
-            {errors.category && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.category}</p>}
+            {errors.category_id && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.category_id}</p>}
           </div>
         </div>
         <div className="space-y-2">
